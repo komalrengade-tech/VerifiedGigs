@@ -7,24 +7,49 @@ const {
     verifyDocument,
     rejectDocument
 } = require('../models/verificationDocumentModel');
+
 const { getStudentProfile } = require('../models/profileModel');
 const { createNotification } = require('../models/notificationModel');
 const { getUserIdByStudentId } = require('../models/userModel');
+
+const db = require('../config/db');
+
+
+// ========================================
+// HELPER → GET ADMIN ID
+// ========================================
+
+const getAdminId = async (userId) => {
+
+    const [rows] = await db.query(
+        'SELECT admin_id FROM admins WHERE user_id = ?',
+        [userId]
+    );
+
+    if (rows.length === 0) {
+        throw new Error('Admin record not found for this user');
+    }
+
+    return rows[0].admin_id;
+};
 
 
 // ========================================
 // STUDENT → UPLOAD DOCUMENT
 // ========================================
 
-const uploadVerificationDocument = async (
-    req,
-    res
-) => {
+const uploadVerificationDocument = async (req, res) => {
 
     try {
 
         const profile = await getStudentProfile(req.user.user_id);
-        if (!profile) return res.status(404).json({ message: 'Student profile not found' });
+
+        if (!profile) {
+            return res.status(404).json({
+                message: 'Student profile not found'
+            });
+        }
+
         const studentId = profile.student_id;
 
         const {
@@ -34,7 +59,6 @@ const uploadVerificationDocument = async (
 
 
         if (!documentType) {
-
             return res.status(400).json({
                 message: 'Document type is required'
             });
@@ -42,7 +66,6 @@ const uploadVerificationDocument = async (
 
 
         if (!documentUrl) {
-
             return res.status(400).json({
                 message: 'Document URL is required'
             });
@@ -87,15 +110,18 @@ const uploadVerificationDocument = async (
 // STUDENT → MY DOCUMENTS
 // ========================================
 
-const getMyDocuments = async (
-    req,
-    res
-) => {
+const getMyDocuments = async (req, res) => {
 
     try {
 
         const profile = await getStudentProfile(req.user.user_id);
-        if (!profile) return res.status(404).json({ message: 'Student profile not found' });
+
+        if (!profile) {
+            return res.status(404).json({
+                message: 'Student profile not found'
+            });
+        }
+
         const studentId = profile.student_id;
 
 
@@ -128,10 +154,7 @@ const getMyDocuments = async (
 // ADMIN → ALL DOCUMENTS
 // ========================================
 
-const getDocumentList = async (
-    req,
-    res
-) => {
+const getDocumentList = async (req, res) => {
 
     try {
 
@@ -162,10 +185,7 @@ const getDocumentList = async (
 // ADMIN → PENDING DOCUMENTS
 // ========================================
 
-const getPendingDocuments = async (
-    req,
-    res
-) => {
+const getPendingDocuments = async (req, res) => {
 
     try {
 
@@ -196,10 +216,7 @@ const getPendingDocuments = async (
 // ADMIN → SINGLE DOCUMENT
 // ========================================
 
-const getDocument = async (
-    req,
-    res
-) => {
+const getDocument = async (req, res) => {
 
     try {
 
@@ -244,18 +261,19 @@ const getDocument = async (
 // ADMIN → VERIFY DOCUMENT
 // ========================================
 
-const approveDocument = async (
-    req,
-    res
-) => {
+const approveDocument = async (req, res) => {
 
     try {
 
         const documentId =
             req.params.documentId;
 
+
+        // IMPORTANT:
+        // req.user.user_id = users.user_id
+        // Database needs admins.admin_id
         const adminId =
-            req.user.user_id;
+            await getAdminId(req.user.user_id);
 
 
         const affectedRows =
@@ -273,14 +291,25 @@ const approveDocument = async (
         }
 
 
-        // --------------------------------------------------
+        // ========================================
         // NOTIFY STUDENT
-        // --------------------------------------------------
+        // ========================================
 
         try {
 
-            const document = await getVerificationDocumentById(documentId);
-            const studentUserId = document ? await getUserIdByStudentId(document.student_id) : null;
+            const document =
+                await getVerificationDocumentById(
+                    documentId
+                );
+
+
+            const studentUserId =
+                document
+                    ? await getUserIdByStudentId(
+                        document.student_id
+                    )
+                    : null;
+
 
             if (studentUserId) {
 
@@ -295,7 +324,10 @@ const approveDocument = async (
 
         } catch (notifyError) {
 
-            console.error('Verification approval notification error:', notifyError);
+            console.error(
+                'Verification approval notification error:',
+                notifyError
+            );
         }
 
 
@@ -325,18 +357,20 @@ const approveDocument = async (
 // ADMIN → REJECT DOCUMENT
 // ========================================
 
-const rejectVerificationDocument = async (
-    req,
-    res
-) => {
+const rejectVerificationDocument = async (req, res) => {
 
     try {
 
         const documentId =
             req.params.documentId;
 
+
+        // IMPORTANT:
+        // req.user.user_id = users.user_id
+        // Database needs admins.admin_id
         const adminId =
-            req.user.user_id;
+            await getAdminId(req.user.user_id);
+
 
         const {
             rejectionReason
@@ -370,14 +404,25 @@ const rejectVerificationDocument = async (
         }
 
 
-        // --------------------------------------------------
+        // ========================================
         // NOTIFY STUDENT
-        // --------------------------------------------------
+        // ========================================
 
         try {
 
-            const document = await getVerificationDocumentById(documentId);
-            const studentUserId = document ? await getUserIdByStudentId(document.student_id) : null;
+            const document =
+                await getVerificationDocumentById(
+                    documentId
+                );
+
+
+            const studentUserId =
+                document
+                    ? await getUserIdByStudentId(
+                        document.student_id
+                    )
+                    : null;
+
 
             if (studentUserId) {
 
@@ -392,7 +437,10 @@ const rejectVerificationDocument = async (
 
         } catch (notifyError) {
 
-            console.error('Verification rejection notification error:', notifyError);
+            console.error(
+                'Verification rejection notification error:',
+                notifyError
+            );
         }
 
 
@@ -417,6 +465,10 @@ const rejectVerificationDocument = async (
     }
 };
 
+
+// ========================================
+// EXPORTS
+// ========================================
 
 module.exports = {
     uploadVerificationDocument,

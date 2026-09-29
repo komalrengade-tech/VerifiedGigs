@@ -91,8 +91,11 @@ const getAllVerificationDocuments = async () => {
          INNER JOIN users u
              ON s.user_id = u.user_id
 
+         LEFT JOIN admins a
+             ON vd.verified_by = a.admin_id
+
          LEFT JOIN users admin_user
-             ON vd.verified_by = admin_user.user_id
+             ON a.user_id = admin_user.user_id
 
          ORDER BY vd.uploaded_at DESC`
     );
@@ -172,6 +175,19 @@ const getVerificationDocumentById = async (
 // VERIFY DOCUMENT
 // ADMIN
 // ========================================
+// IMPORTANT:
+// adminId must be admins.admin_id
+//
+// Example:
+// users.user_id = 43
+// admins.admin_id = 1
+//
+// Controller passes:
+// adminId = 1
+//
+// Therefore we directly store:
+// verified_by = 1
+// ========================================
 
 const verifyDocument = async (
     documentId,
@@ -200,6 +216,8 @@ const verifyDocument = async (
 // REJECT DOCUMENT
 // ADMIN
 // ========================================
+// adminId must be admins.admin_id
+// ========================================
 
 const rejectDocument = async (
     documentId,
@@ -225,6 +243,10 @@ const rejectDocument = async (
     return result.affectedRows;
 };
 
+
+// ========================================
+// EXPORTS
+// ========================================
 
 module.exports = {
     createVerificationDocument,

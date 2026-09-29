@@ -140,16 +140,27 @@ const getAllGigsAdmin = async () => {
 
 
 // ======================================================
-// DELETE GIG — ADMIN (ANY OWNER)
+// DELETE GIG — ADMIN
+// ======================================================
+//
+// IMPORTANT:
+// We intentionally keep the database foreign-key
+// protection.
+//
+// If a gig has applications/projects associated with it,
+// MySQL will reject the DELETE operation.
+//
+// The controller handles that error and returns HTTP 409.
 // ======================================================
 
-const deleteGigAdmin = async (gigId) => {
+const deleteGigAdmin = async (
+    gigId
+) => {
 
     const [result] = await pool.query(
 
         `DELETE FROM gigs
-
-        WHERE gig_id = ?`,
+         WHERE gig_id = ?`,
 
         [gigId]
 
@@ -163,16 +174,18 @@ const deleteGigAdmin = async (gigId) => {
 // GET CLIENT ID USING USER ID
 // ======================================================
 
-const getClientIdByUserId = async (userId) => {
+const getClientIdByUserId = async (
+    userId
+) => {
 
     const [rows] = await pool.query(
 
         `SELECT
             client_id
 
-        FROM clients
+         FROM clients
 
-        WHERE user_id = ?`,
+         WHERE user_id = ?`,
         [userId]
 
     );
@@ -211,7 +224,7 @@ const createGig = async (
         )
 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        
+
         [
             clientId,
             categoryId,
@@ -284,10 +297,13 @@ const updateGig = async (
 
 
 // ======================================================
-// DELETE GIG
+// DELETE GIG — CLIENT
 // ======================================================
 
-const deleteGig = async (gigId, clientId) => {
+const deleteGig = async (
+    gigId,
+    clientId
+) => {
 
     const [result] = await pool.query(
 

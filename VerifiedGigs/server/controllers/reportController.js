@@ -5,14 +5,60 @@ const {
     getReportById,
     updateReportStatus
 } = require('../models/reportModel');
+
 const { createNotification } = require('../models/notificationModel');
+
+const pool = require('../config/db');
+
+
+// ========================================
+// GET ADMIN ID FROM USER ID
+// ========================================
+//
+// req.user.user_id comes from users table.
+//
+// reports.resolved_by expects admins.admin_id.
+//
+// Example:
+//
+// users.user_id = 44
+//        ↓
+// admins.user_id = 44
+//        ↓
+// admins.admin_id = 2
+//
+// This conversion is done ONLY here.
+// reportModel.js receives the actual admin_id.
+// ========================================
+
+const getAdminId = async (userId) => {
+
+    const [rows] = await pool.query(
+        `SELECT admin_id
+         FROM admins
+         WHERE user_id = ?`,
+        [userId]
+    );
+
+    if (rows.length === 0) {
+
+        throw new Error(
+            `Admin record not found for user_id: ${userId}`
+        );
+    }
+
+    return rows[0].admin_id;
+};
 
 
 // ========================================
 // CREATE REPORT
 // ========================================
 
-const addReport = async (req, res) => {
+const addReport = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -230,9 +276,6 @@ const changeReportStatus = async (
             status
         } = req.body;
 
-        const adminId =
-            req.user.user_id;
-
 
         const allowedStatuses = [
             'PENDING',
@@ -255,6 +298,13 @@ const changeReportStatus = async (
         }
 
 
+        // Convert users.user_id → admins.admin_id
+        const adminId =
+            await getAdminId(
+                req.user.user_id
+            );
+
+
         const affectedRows =
             await updateReportStatus(
                 reportId,
@@ -271,28 +321,42 @@ const changeReportStatus = async (
         }
 
 
-        // --------------------------------------------------
+        // ========================================
         // NOTIFY REPORTER
-        // --------------------------------------------------
+        // ========================================
 
         try {
 
-            const report = await getReportById(reportId);
+            const report =
+                await getReportById(
+                    reportId
+                );
+
 
             if (report?.reporter_id) {
 
                 await createNotification(
+
                     report.reporter_id,
+
                     'Report status updated',
-                    `Your report "${report.reason}" is now ${status.replace('_', ' ').toLowerCase()}.`,
+
+                    `Your report "${report.reason}" is now ${status
+                        .replace('_', ' ')
+                        .toLowerCase()}.`,
+
                     'REPORT',
+
                     Number(reportId)
                 );
             }
 
         } catch (notifyError) {
 
-            console.error('Report status notification error:', notifyError);
+            console.error(
+                'Report status notification error:',
+                notifyError
+            );
         }
 
 
@@ -317,6 +381,10 @@ const changeReportStatus = async (
     }
 };
 
+
+// ========================================
+// EXPORTS
+// ========================================
 
 module.exports = {
     addReport,

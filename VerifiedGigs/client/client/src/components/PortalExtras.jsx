@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./PortalExtras.css";
+import "./StudentPortal.css";
 
 const API = "http://localhost:5000/api";
 async function request(path, token, options = {}) { const response = await fetch(`${API}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) } }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || "Request failed"); return body; }
@@ -9,7 +10,129 @@ const date = (value) => value ? new Date(value).toLocaleDateString("en-IN", { da
 const messageOf = (error) => error?.message || "Something went wrong. Please try again.";
 function State({ loading, error, empty, children }) { if (loading) return <div className="extra-state">Loading...</div>; if (error) return <div className="extra-state error"><strong>{messageOf(error)}</strong></div>; if (empty) return <div className="extra-state"><strong>Nothing here yet</strong><span>{empty}</span></div>; return children; }
 function Notice({ children, error = false }) { return children ? <div className={`extra-notice${error ? " error" : ""}`}>{children}</div> : null; }
-function Shell({ role, title, children }) { const links = role === "STUDENT" ? [["/student/dashboard", "Dashboard"], ["/student/projects", "Projects"], ["/student/reports", "Reports"], ["/student/reviews", "Reviews"], ["/student/profile", "Profile"]] : [["/client/dashboard", "Dashboard"], ["/client/projects", "Projects"], ["/client/reports", "Reports"], ["/client/reviews", "Reviews"], ["/client/profile", "Profile"]]; return <div className={`extras ${role.toLowerCase()}`}><header><Link to={links[0][0]} className="extras-logo"><span className="logo-mark">V</span>VerifiedGigs</Link><nav>{links.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}</nav></header><main><p className="eyebrow"><span className="eyebrow-dot" />{role === "STUDENT" ? "Student Portal" : "Client Portal"}</p><h1>{title}</h1>{children}</main></div>; }
+ function Shell({ role, title, children }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Use the exact same detailed navbar as the StudentPortal pages
+  if (role === "STUDENT") {
+    const links = [
+      ["/student/dashboard", "Dashboard"],
+      ["/student/gigs", "Browse Gigs"],
+      ["/student/applications", "Applications"],
+      ["/student/projects", "Projects"],
+      ["/student/portfolio", "Portfolio"],
+      ["/student/favorites", "Favorites"],
+      ["/student/notifications", "Notifications"],
+      ["/student/messages", "Messages"],
+      ["/student/reports", "Reports"],
+      ["/student/reviews", "Reviews"],
+      ["/student/profile", "Profile"],
+    ];
+
+    return (
+      <div className="student-portal">
+        <header className="portal-header">
+          <Link to="/student/dashboard" className="portal-logo">
+            <span className="logo-mark">V</span>
+            <span>
+              Verified<span>Gigs</span>
+            </span>
+          </Link>
+
+          <nav className="portal-nav">
+            {links.map(([to, label]) => (
+              <Link
+                key={to}
+                to={to}
+                className={location.pathname === to ? "active" : ""}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="portal-account">
+            <span>
+              {user?.name || user?.email || "Student"}
+            </span>
+
+            <button
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+            >
+              Log out
+            </button>
+          </div>
+        </header>
+
+        <main className="portal-main">
+          <div className="portal-heading">
+            <div>
+              <p className="eyebrow">
+                <span className="eyebrow-dot" />
+                Student Portal
+              </p>
+
+              <h1>{title}</h1>
+            </div>
+
+            <Link
+              className="button button-small button-ghost"
+              to="/student/gigs"
+            >
+              Find opportunities
+            </Link>
+          </div>
+
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  // Keep Client Reports/Reviews behavior as it was
+  const links = [
+    ["/client/dashboard", "Dashboard"],
+    ["/client/projects", "Projects"],
+    ["/client/reports", "Reports"],
+    ["/client/reviews", "Reviews"],
+    ["/client/profile", "Profile"],
+  ];
+
+  return (
+    <div className={`extras ${role.toLowerCase()}`}>
+      <header>
+        <Link to={links[0][0]} className="extras-logo">
+          <span className="logo-mark">V</span>
+          VerifiedGigs
+        </Link>
+
+        <nav>
+          {links.map(([to, label]) => (
+            <Link key={to} to={to}>
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      <main>
+        <p className="eyebrow">
+          <span className="eyebrow-dot" />
+          Client Portal
+        </p>
+
+        <h1>{title}</h1>
+
+        {children}
+      </main>
+    </div>
+  );
+}
 function ReportForm({ role, projects, gigs, onSaved }) { const { token } = useAuth(); const [target, setTarget] = useState(""); const [reason, setReason] = useState(""); const [description, setDescription] = useState(""); const [notice, setNotice] = useState(""); const [error, setError] = useState(null); const submit = async (event) => { event.preventDefault(); setError(null); setNotice(""); if (!target || !reason.trim()) return setError(new Error("Choose a target and enter a reason.")); const [type, id] = target.split(":"); const body = { reason: reason.trim(), description: description.trim() }; body[type === "project" ? "projectId" : type === "gig" ? "gigId" : "reportedUserId"] = Number(id); try { await request("/reports", token, { method: "POST", body: JSON.stringify(body) }); setNotice("Report submitted successfully."); setTarget(""); setReason(""); setDescription(""); onSaved(); } catch (err) { setError(err); } }; return <section className="extra-card"><h2>Submit a report</h2>{notice && <Notice>{notice}</Notice>}{error && <Notice error>{messageOf(error)}</Notice>}<form onSubmit={submit}><label>Target<select required value={target} onChange={(event) => setTarget(event.target.value)}><option value="">Choose a project or gig</option>{projects.map((project) => <option key={`project:${project.project_id}`} value={`project:${project.project_id}`}>Project: {project.project_title || project.gig_title}</option>)}{gigs.map((gig) => <option key={`gig:${gig.gig_id}`} value={`gig:${gig.gig_id}`}>Gig: {gig.title}</option>)}</select></label><label>Reason<input required value={reason} onChange={(event) => setReason(event.target.value)} /></label><label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label><button type="submit">Submit report</button></form></section>; }
 export function PortalReports({ role }) { const { token } = useAuth(); const [reports, setReports] = useState([]); const [projects, setProjects] = useState([]); const [gigs, setGigs] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const load = () => { setLoading(true); const projectPath = role === "STUDENT" ? "/student/projects" : "/client/projects"; const gigPath = role === "STUDENT" ? "/gigs" : "/client/gigs"; Promise.all([request("/reports/my", token), request(projectPath, token), request(gigPath, token)]).then(([reportBody, projectBody, gigBody]) => { setReports(reportBody.reports || []); setProjects(projectBody.projects || []); setGigs(gigBody.gigs || []) }).catch(setError).finally(() => setLoading(false)); }; useEffect(load, [token, role]); return <Shell role={role} title="Reports and issues"><State loading={loading} error={error}><ReportForm role={role} projects={projects} gigs={gigs} onSaved={load} /><section className="extra-card"><h2>My reports</h2>{reports.length === 0 ? <p className="muted">You have not submitted any reports.</p> : <div className="extra-list">{reports.map((report) => <article key={report.report_id}><strong>{report.reason}</strong><span>{report.report_status}</span><small>{date(report.reported_at)}</small><p>{report.description || "No description provided."}</p></article>)}</div>}</section></State></Shell>; }
 function ReviewForm({ project, reviewedUserId, onSaved }) { const { token } = useAuth(); const [rating, setRating] = useState(""); const [reviewText, setReviewText] = useState(""); const [error, setError] = useState(null); const [notice, setNotice] = useState(""); const submit = async (event) => { event.preventDefault(); try { await request(`/projects/${project.project_id}/reviews`, token, { method: "POST", body: JSON.stringify({ reviewedUserId, rating: Number(rating), reviewText }) }); setNotice("Review submitted."); setRating(""); setReviewText(""); onSaved(); } catch (err) { setError(err); } }; return <form className="review-form" onSubmit={submit}>{notice && <Notice>{notice}</Notice>}{error && <Notice error>{messageOf(error)}</Notice>}<label>Rating<select required value={rating} onChange={(event) => setRating(event.target.value)}><option value="">Choose 1-5</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label><label>Review<textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} /></label><button type="submit">Submit review</button></form>; }

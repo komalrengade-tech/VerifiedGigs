@@ -22,6 +22,9 @@ export default function AuthPage({ initialMode = "login" }) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Show / Hide password
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -74,7 +77,10 @@ export default function AuthPage({ initialMode = "login" }) {
           role: "STUDENT",
         });
 
-        // After successful signup, redirect them to the Login page (do not open dashboard)
+        // Reset password visibility after signup
+        setShowPassword(false);
+
+        // After successful signup, redirect to Login
         setTimeout(() => {
           navigate("/login", { replace: true });
         }, 1200);
@@ -102,8 +108,12 @@ export default function AuthPage({ initialMode = "login" }) {
               Verified<span>Gigs</span>
             </span>
           </button>
+
           <div>
-            <p className="eyebrow">{isLogin ? "Welcome back" : "Start something real"}</p>
+            <p className="eyebrow">
+              {isLogin ? "Welcome back" : "Start something real"}
+            </p>
+
             <h1>
               {isLogin ? (
                 <>
@@ -119,12 +129,14 @@ export default function AuthPage({ initialMode = "login" }) {
                 </>
               )}
             </h1>
+
             <p>
               {isLogin
                 ? "Pick up where you left off and keep your momentum moving."
                 : "Create your profile and find work that makes your potential visible."}
             </p>
           </div>
+
           <div className="intro-note">
             <span>✦</span> Trusted by students building what comes next
           </div>
@@ -133,7 +145,9 @@ export default function AuthPage({ initialMode = "login" }) {
         <div className="auth-card">
           <div className="auth-card-head">
             <p className="eyebrow">VerifiedGigs account</p>
+
             <h2>{isLogin ? "Welcome back" : "Create your account"}</h2>
+
             <p className="subtitle">
               {isLogin
                 ? "Log in to continue your journey."
@@ -152,6 +166,7 @@ export default function AuthPage({ initialMode = "login" }) {
             >
               Login
             </button>
+
             <button
               className={!isLogin ? "active" : ""}
               onClick={() => {
@@ -168,6 +183,7 @@ export default function AuthPage({ initialMode = "login" }) {
             {!isLogin && (
               <>
                 <label>Full Name</label>
+
                 <input
                   type="text"
                   name="name"
@@ -176,7 +192,9 @@ export default function AuthPage({ initialMode = "login" }) {
                   onChange={handleChange}
                   required
                 />
+
                 <label>Phone</label>
+
                 <input
                   type="text"
                   name="phone"
@@ -184,8 +202,14 @@ export default function AuthPage({ initialMode = "login" }) {
                   value={form.phone}
                   onChange={handleChange}
                 />
+
                 <label>Account Type</label>
-                <select name="role" value={form.role} onChange={handleChange}>
+
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                >
                   <option value="STUDENT">Student</option>
                   <option value="CLIENT">Client</option>
                 </select>
@@ -193,6 +217,7 @@ export default function AuthPage({ initialMode = "login" }) {
             )}
 
             <label>Email</label>
+
             <input
               type="email"
               name="email"
@@ -203,16 +228,32 @@ export default function AuthPage({ initialMode = "login" }) {
             />
 
             <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter your password"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
 
-            <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {/* Password input with Show / Hide */}
+            <div className="password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={isSubmitting}
+            >
               <span>
                 {isSubmitting
                   ? isLogin
@@ -222,6 +263,7 @@ export default function AuthPage({ initialMode = "login" }) {
                   ? "Log in"
                   : "Create account"}
               </span>
+
               <span>↗</span>
             </button>
           </form>
@@ -230,12 +272,17 @@ export default function AuthPage({ initialMode = "login" }) {
           {error && <div className="error">{error}</div>}
 
           <p className="switch">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            {isLogin
+              ? "Don't have an account?"
+              : "Already have an account?"}
+
             <button
               onClick={() => {
                 setMessage("");
                 setError("");
-                navigate(isLogin ? "/signup" : "/login", { replace: true });
+                navigate(isLogin ? "/signup" : "/login", {
+                  replace: true,
+                });
               }}
             >
               {isLogin ? " Sign Up" : " Login"}

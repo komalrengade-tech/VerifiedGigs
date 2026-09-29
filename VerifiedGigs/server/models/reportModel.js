@@ -43,7 +43,9 @@ const createReport = async (
 // GET REPORTS CREATED BY USER
 // ========================================
 
-const getMyReports = async (reporterId) => {
+const getMyReports = async (
+    reporterId
+) => {
 
     const [rows] = await pool.query(
         `SELECT
@@ -105,8 +107,11 @@ const getAllReports = async () => {
          LEFT JOIN users reported
              ON r.reported_user_id = reported.user_id
 
+         LEFT JOIN admins a
+             ON r.resolved_by = a.admin_id
+
          LEFT JOIN users admin_user
-             ON r.resolved_by = admin_user.user_id
+             ON a.user_id = admin_user.user_id
 
          ORDER BY r.reported_at DESC`
     );
@@ -119,7 +124,9 @@ const getAllReports = async () => {
 // GET REPORT BY ID
 // ========================================
 
-const getReportById = async (reportId) => {
+const getReportById = async (
+    reportId
+) => {
 
     const [rows] = await pool.query(
         `SELECT
@@ -145,17 +152,33 @@ const getReportById = async (reportId) => {
 
 // ========================================
 // UPDATE REPORT STATUS
+// ADMIN
+// ========================================
+//
+// IMPORTANT:
+// adminId received here is already
+// admins.admin_id.
+//
+// The controller converts:
+// users.user_id → admins.admin_id
+//
+// Therefore this model must NOT perform
+// another conversion.
 // ========================================
 
 const updateReportStatus = async (
     reportId,
     status,
-    resolvedBy
+    adminId
 ) => {
 
     let query;
     let params;
 
+
+    // ========================================
+    // RESOLVED / REJECTED
+    // ========================================
 
     if (
         status === 'RESOLVED' ||
@@ -173,11 +196,18 @@ const updateReportStatus = async (
 
         params = [
             status,
-            resolvedBy,
+            adminId,
             reportId
         ];
 
-    } else {
+    }
+
+
+    // ========================================
+    // OTHER STATUS
+    // ========================================
+
+    else {
 
         query = `
             UPDATE reports
@@ -195,15 +225,18 @@ const updateReportStatus = async (
     }
 
 
-    const [result] =
-        await pool.query(
-            query,
-            params
-        );
+    const [result] = await pool.query(
+        query,
+        params
+    );
 
     return result.affectedRows;
 };
 
+
+// ========================================
+// EXPORTS
+// ========================================
 
 module.exports = {
     createReport,

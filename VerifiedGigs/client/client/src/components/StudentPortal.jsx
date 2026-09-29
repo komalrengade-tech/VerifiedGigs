@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./StudentPortal.css";
 
@@ -29,12 +29,84 @@ function Feedback({ loading, error, empty, children }) {
 function Shell({ title, eyebrow = "Student Portal", children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const links = [
-    ["/student/dashboard", "Dashboard"], ["/student/gigs", "Browse Gigs"], ["/student/applications", "Applications"],
-    ["/student/projects", "Projects"], ["/student/portfolio", "Portfolio"], ["/student/favorites", "Favorites"],
-    ["/student/notifications", "Notifications"], ["/student/messages", "Messages"], ["/student/reports", "Reports"], ["/student/reviews", "Reviews"], ["/student/profile", "Profile"],
+    ["/student/dashboard", "Dashboard"],
+    ["/student/gigs", "Browse Gigs"],
+    ["/student/applications", "Applications"],
+    ["/student/projects", "Projects"],
+    ["/student/portfolio", "Portfolio"],
+    ["/student/favorites", "Favorites"],
+    ["/student/notifications", "Notifications"],
+    ["/student/messages", "Messages"],
+    ["/student/reports", "Reports"],
+    ["/student/reviews", "Reviews"],
+    ["/student/profile", "Profile"]
   ];
-  return <div className="student-portal"><header className="portal-header"><Link to="/student/dashboard" className="portal-logo"><span className="logo-mark">V</span><span>Verified<span>Gigs</span></span></Link><nav className="portal-nav">{links.map(([to, label]) => <Link key={to} to={to} className={location.pathname === to ? "active" : ""}>{label}</Link>)}</nav><div className="portal-account"><span>{user?.name || user?.email || "Student"}</span><button onClick={() => { logout(); navigate("/"); }}>Log out</button></div></header><main className="portal-main"><div className="portal-heading"><div><p className="eyebrow"><span className="eyebrow-dot" />{eyebrow}</p><h1>{title}</h1></div><Link className="button button-small button-ghost" to="/student/gigs">Find opportunities</Link></div>{children}</main></div>;
+
+  return (
+    <div className="student-portal">
+      <header className="portal-header">
+
+        <Link to="/student/dashboard" className="portal-logo">
+          <span className="logo-mark">V</span>
+          <span>
+            Verified<span>Gigs</span>
+          </span>
+        </Link>
+
+        <nav className="portal-nav">
+          {links.map(([to, label]) => (
+            <Link
+              key={to}
+              to={to}
+              className={location.pathname === to ? "active" : ""}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="portal-account">
+          <span>
+            {user?.name || user?.email || "Student"}
+          </span>
+
+          <button
+            onClick={() => {
+              logout();
+              navigate("/");
+            }}
+          >
+            Log out
+          </button>
+        </div>
+
+      </header>
+
+      <main className="portal-main">
+        <div className="portal-heading">
+          <div>
+            <p className="eyebrow">
+              <span className="eyebrow-dot" />
+              {eyebrow}
+            </p>
+            <h1>{title}</h1>
+          </div>
+
+          <Link
+            className="button button-small button-ghost"
+            to="/student/gigs"
+          >
+            Find opportunities
+          </Link>
+        </div>
+
+        {children}
+      </main>
+    </div>
+  );
 }
 
 export function StudentGigs() {
@@ -78,12 +150,167 @@ export function StudentPortfolio() {
   return <Shell title="Portfolio"><div className="detail-layout"><section className="portal-card form-card"><h2>{editing ? "Edit project" : "Add a project"}</h2><form onSubmit={submit}>{["title", "description", "projectUrl", "githubUrl", "imageUrl"].map((field) => <label key={field}>{field === "title" ? "Title" : field.replace("Url", " URL")} {field === "description" ? <textarea required={field === "description"} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} /> : <input required={field === "title"} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />}</label>)}<button className="button" type="submit">{editing ? "Save changes" : "Add to portfolio"}</button></form></section><section><Feedback loading={loading} error={error} empty={items.length === 0 ? "Add your strongest work to build trust with clients." : null}><div className="stack">{items.map((item) => <article className="portal-card" key={item.portfolio_id}><h2>{item.title}</h2><p>{item.description}</p><div className="card-actions"><button className="button button-small button-ghost" onClick={() => { setEditing(item.portfolio_id); setForm({ title: item.title || "", description: item.description || "", projectUrl: item.project_url || "", githubUrl: item.github_url || "", imageUrl: item.image_url || "" }); }}>Edit</button><button className="button button-small button-danger" onClick={async () => { await api(`/student/portfolio/${item.portfolio_id}`, token, { method: "DELETE" }); load(); }}>Delete</button></div></article>)}</div></Feedback></section></div></Shell>;
 }
 
-export function StudentFavorites() { const { token } = useAuth(); const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const load = () => { api("/favorites", token).then((body) => setItems(body.favorites || [])).catch(setError).finally(() => setLoading(false)); }; useEffect(load, [token]); return <Shell title="Saved gigs"><Feedback loading={loading} error={error} empty={items.length === 0 ? "Save gigs while browsing to revisit them here." : null}><div className="portal-grid">{items.map((item) => <article className="portal-card gig-card" key={item.gig_id}><div className="card-kicker">Saved <span>{item.status}</span></div><h2>{item.title}</h2><p>{item.description}</p><div className="card-footer"><strong>{money(item.budget)}</strong><Link className="button button-small" to={`/student/gigs/${item.gig_id}`}>View gig</Link></div></article>)}</div></Feedback></Shell>; }
+export function StudentFavorites() { const { token } = useAuth(); const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const load = () => { api("/favorites", token).then((body) => setItems(body.favorites || [])).catch(setError).finally(() => setLoading(false)); }; useEffect(load, [token]); return <Shell title="Saved gigs"><Feedback loading={loading} error={error} empty={items.length === 0 ? "Save gigs while browsing to revisit them here." : null}><div className="portal-grid">{items.map((item) => <article className="portal-card gig-card" key={item.gig_id}><div className="card-kicker">Saved <span>{item.status}</span></div><h2>{item.title}</h2><p>{item.description}</p><div className="card-footer"><strong>{money(item.budget_min)} - {money(item.budget_max)}</strong><Link className="button button-small" to={`/student/gigs/${item.gig_id}`}>View gig</Link></div></article>)}</div></Feedback></Shell>; }
 
 export function StudentNotifications() { const { token } = useAuth(); const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const load = () => { api("/notifications", token).then((body) => setItems(body.notifications || [])).catch(setError).finally(() => setLoading(false)); }; useEffect(load, [token]); const markAll = async () => { await api("/notifications/read-all", token, { method: "PUT" }); load(); }; return <Shell title="Notifications"><div className="portal-toolbar"><span>Application, project and payment updates</span><button className="button button-small button-ghost" onClick={markAll}>Mark all read</button></div><Feedback loading={loading} error={error} empty={items.length === 0 ? "You are all caught up." : null}><div className="stack">{items.map((item) => <article className={`portal-card notification ${item.is_read === 0 ? "unread" : ""}`} key={item.notification_id}><div><div className="card-kicker">{item.notification_type}<span>{date(item.created_at)}</span></div><h2>{item.title}</h2><p>{item.message}</p></div>{item.is_read === 0 && <button className="button button-small button-ghost" onClick={async () => { await api(`/notifications/${item.notification_id}/read`, token, { method: "PUT" }); load(); }}>Mark read</button>}</article>)}</div></Feedback></Shell>; }
 
 export function StudentMessages() { const { token } = useAuth(); const [projects, setProjects] = useState([]); const [selected, setSelected] = useState(""); const [messages, setMessages] = useState([]); const [text, setText] = useState(""); const [error, setError] = useState(null); useEffect(() => { api("/student/projects", token).then((body) => setProjects(body.projects || [])).catch(setError); }, [token]); useEffect(() => { if (!selected) return; api(`/projects/${selected}/messages`, token).then((body) => setMessages(body.messages || [])).catch(setError); }, [selected, token]); const send = async (e) => { e.preventDefault(); const project = projects.find((item) => String(item.project_id) === selected); if (!project?.client_user_id && !project?.client_id) return setError(new Error("This project does not include a client recipient.")); try { await api("/messages", token, { method: "POST", body: JSON.stringify({ receiverId: project.client_user_id || project.client_id, projectId: Number(selected), messageText: text }) }); setText(""); const body = await api(`/projects/${selected}/messages`, token); setMessages(body.messages || []); } catch (err) { setError(err); } }; return <Shell title="Messages"><div className="message-layout"><section className="portal-card"><h2>Project conversations</h2>{error && <div className="notice">{errorText(error)}</div>}{projects.length === 0 ? <p className="muted">Messages become available after a project starts.</p> : <div className="project-picker">{projects.map((project) => <button className={String(project.project_id) === selected ? "selected" : ""} key={project.project_id} onClick={() => setSelected(String(project.project_id))}>{project.project_title || project.gig_title}<small>{project.client_name}</small></button>)}</div>}</section><section className="portal-card chat"><h2>{selected ? "Conversation" : "Select a project"}</h2><div className="message-list">{messages.map((message) => <div className="message" key={message.message_id}><strong>{message.sender_name || "Participant"}</strong><p>{message.message_text}</p><small>{date(message.sent_at)}</small></div>)}</div>{selected && <form onSubmit={send}><textarea required value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message" /><button className="button" type="submit">Send message</button></form>}</section></div></Shell>; }
 
-export function StudentSkills({ token }) { const [skills, setSkills] = useState([]); const [available, setAvailable] = useState([]); const [skillId, setSkillId] = useState(""); const [proficiencyLevel, setProficiencyLevel] = useState("BEGINNER"); const [yearsOfExperience, setYearsOfExperience] = useState(""); const [error, setError] = useState(null); const load = () => Promise.all([api("/student/skills", token), api("/skills", token)]).then(([mine, all]) => { setSkills(mine.skills || []); setAvailable(all.skills || []); }).catch(setError); useEffect(load, [token]); const add = async (event) => { event.preventDefault(); try { await api("/student/skills", token, { method: "POST", body: JSON.stringify({ skillId: Number(skillId), proficiencyLevel, yearsOfExperience }) }); setSkillId(""); setYearsOfExperience(""); load(); } catch (err) { setError(err); } }; return <div className="portal-card"><h2>Skills</h2>{error && <div className="notice">{errorText(error)}</div>}<div className="skill-list">{skills.length ? skills.map((skill) => <span className="skill-chip" key={skill.skill_id}>{skill.skill_name} · {skill.proficiency_level || "Unrated"}<button onClick={async () => { await api(`/student/skills/${skill.skill_id}`, token, { method: "DELETE" }); load(); }} aria-label={`Remove ${skill.skill_name}`}>×</button></span>) : <p className="muted">Add skills to show clients what you can do.</p>}</div><form onSubmit={add}><label>Skill<select required value={skillId} onChange={(e) => setSkillId(e.target.value)}><option value="">Choose a skill</option>{available.filter((skill) => !skills.some((mine) => mine.skill_id === skill.skill_id)).map((skill) => <option value={skill.skill_id} key={skill.skill_id}>{skill.skill_name}</option>)}</select></label><div className="detail-facts"><label>Proficiency<select value={proficiencyLevel} onChange={(e) => setProficiencyLevel(e.target.value)}><option>BEGINNER</option><option>INTERMEDIATE</option><option>ADVANCED</option><option>EXPERT</option></select></label><label>Years of experience<input type="number" min="0" value={yearsOfExperience} onChange={(e) => setYearsOfExperience(e.target.value)} /></label></div><button className="button button-small" type="submit">Add skill</button></form></div>; }
+export function StudentSkills({ token }) {
+  const [skills, setSkills] = useState([]);
+  const [available, setAvailable] = useState([]);
+  const [skillId, setSkillId] = useState("");
+  const [proficiencyLevel, setProficiencyLevel] = useState("BEGINNER");
+  const [yearsOfExperience, setYearsOfExperience] = useState("");
+  const [error, setError] = useState(null);
+
+  const load = () => {
+    Promise.all([
+      api("/student/skills", token),
+      api("/skills", token)
+    ])
+      .then(([mine, all]) => {
+        setSkills(mine.skills || []);
+        setAvailable(all.skills || []);
+      })
+      .catch(setError);
+  };
+
+  useEffect(() => {
+    load();
+  }, [token]);
+
+  const add = async (event) => {
+    event.preventDefault();
+
+    try {
+      await api("/student/skills", token, {
+        method: "POST",
+        body: JSON.stringify({
+          skillId: Number(skillId),
+          proficiencyLevel,
+          yearsOfExperience
+        })
+      });
+
+      setSkillId("");
+      setYearsOfExperience("");
+      load();
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  return (
+    <div className="portal-card">
+      <h2>Skills</h2>
+
+      {error && (
+        <div className="notice">
+          {errorText(error)}
+        </div>
+      )}
+
+      <div className="skill-list">
+        {skills.length ? (
+          skills.map((skill) => (
+            <span
+              className="skill-chip"
+              key={skill.skill_id}
+            >
+              {skill.skill_name} · {skill.proficiency_level || "Unrated"}
+
+              <button
+                onClick={async () => {
+                  await api(
+                    `/student/skills/${skill.skill_id}`,
+                    token,
+                    { method: "DELETE" }
+                  );
+                  load();
+                }}
+                aria-label={`Remove ${skill.skill_name}`}
+              >
+                ×
+              </button>
+            </span>
+          ))
+        ) : (
+          <p className="muted">
+            Add skills to show clients what you can do.
+          </p>
+        )}
+      </div>
+
+      <form onSubmit={add}>
+        <label>
+          Skill
+
+          <select
+            required
+            value={skillId}
+            onChange={(e) => setSkillId(e.target.value)}
+          >
+            <option value="">Choose a skill</option>
+
+            {available
+              .filter(
+                (skill) =>
+                  !skills.some(
+                    (mine) => mine.skill_id === skill.skill_id
+                  )
+              )
+              .map((skill) => (
+                <option
+                  value={skill.skill_id}
+                  key={skill.skill_id}
+                >
+                  {skill.skill_name}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <div className="detail-facts">
+          <label>
+            Proficiency
+
+            <select
+              value={proficiencyLevel}
+              onChange={(e) =>
+                setProficiencyLevel(e.target.value)
+              }
+            >
+              <option>BEGINNER</option>
+              <option>INTERMEDIATE</option>
+              <option>ADVANCED</option>
+              <option>EXPERT</option>
+            </select>
+          </label>
+
+          <label>
+            Years of experience
+
+            <input
+              type="number"
+              min="0"
+              value={yearsOfExperience}
+              onChange={(e) =>
+                setYearsOfExperience(e.target.value)
+              }
+            />
+          </label>
+        </div>
+
+        <button
+          className="button button-small"
+          type="submit"
+        >
+          Add skill
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export function StudentProfile() { const { token } = useAuth(); const [profile, setProfile] = useState({}); const [docs, setDocs] = useState([]); const [form, setForm] = useState({}); const [document, setDocument] = useState({ documentType: "", documentUrl: "" }); const [notice, setNotice] = useState(""); const [error, setError] = useState(null); useEffect(() => { Promise.all([api("/student/profile", token), api("/verification-documents/my", token)]).then(([profileBody, docBody]) => { setProfile(profileBody.profile || {}); setForm(profileBody.profile || {}); setDocs(docBody.documents || []); }).catch(setError); }, [token]); const update = async (e) => { e.preventDefault(); try { await api("/student/profile", token, { method: "PUT", body: JSON.stringify({ name: form.name, phone: form.phone, profilePicture: form.profile_picture, collegeName: form.college_name, course: form.course, yearOfStudy: form.year_of_study, bio: form.bio, location: form.location, hourlyRate: form.hourly_rate, availabilityStatus: form.availability_status }) }); setNotice("Profile updated successfully."); } catch (err) { setError(err); } }; const upload = async (e) => { e.preventDefault(); try { await api("/verification-documents", token, { method: "POST", body: JSON.stringify(document) }); setDocument({ documentType: "", documentUrl: "" }); setNotice("Verification document submitted."); const body = await api("/verification-documents/my", token); setDocs(body.documents || []); } catch (err) { setError(err); } }; const fields = [["name", "Name"], ["phone", "Phone"], ["college_name", "College"], ["course", "Course"], ["year_of_study", "Year of study"], ["location", "Location"], ["hourly_rate", "Hourly rate"], ["availability_status", "Availability"]]; return <Shell title="Your profile"><Feedback loading={!profile.user_id && !error} error={error} empty={!profile.user_id ? "Student profile not found." : null}>{notice && <div className="notice">{notice}</div>}<div className="detail-layout"><section className="portal-card form-card"><h2>Personal details</h2><form onSubmit={update}>{fields.map(([key, label]) => <label key={key}>{label}<input value={form[key] || ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>)}<label>Bio<textarea value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} /></label><button className="button" type="submit">Save profile</button></form></section><section className="stack"><StudentSkills token={token} /><div className="portal-card"><h2>Verification</h2><p className="muted">Verification status: <strong>{profile.verification_status || "PENDING"}</strong></p><form onSubmit={upload}><label>Document type<input required value={document.documentType} onChange={(e) => setDocument({ ...document, documentType: e.target.value })} placeholder="Student ID, certificate..." /></label><label>Document URL<input required type="url" value={document.documentUrl} onChange={(e) => setDocument({ ...document, documentUrl: e.target.value })} /></label><button className="button button-small" type="submit">Submit verification</button></form></div><div className="portal-card"><h2>Submitted documents</h2>{docs.length === 0 ? <p className="muted">No documents submitted yet.</p> : docs.map((doc) => <div className="document-row" key={doc.document_id}><span>{doc.document_type}<small>{date(doc.uploaded_at)}</small></span><strong>{doc.verification_status}</strong></div>)}</div></section></div></Feedback></Shell>; }

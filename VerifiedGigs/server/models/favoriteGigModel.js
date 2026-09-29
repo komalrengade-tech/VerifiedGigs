@@ -63,7 +63,8 @@ const getStudentFavorites = async (
 
             g.title,
             g.description,
-            g.budget,
+            g.budget_min,
+            g.budget_max,
             g.status,
 
             c.client_id,
