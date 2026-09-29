@@ -68,7 +68,15 @@ const {
     authenticateToken,
     authorizeRoles
 } = require('./middleware/authMiddleware');
-
+app.get('/api/env-test', (req, res) => {
+    res.json({
+        DB_HOST: JSON.stringify(process.env.DB_HOST),
+        DB_USER: JSON.stringify(process.env.DB_USER),
+        DB_NAME: JSON.stringify(process.env.DB_NAME),
+        DB_PORT: JSON.stringify(process.env.DB_PORT),
+        DB_PASSWORD_SET: !!process.env.DB_PASSWORD
+    });
+});
 // Test API
 app.get('/api/test', (req, res) => {
     res.json({
