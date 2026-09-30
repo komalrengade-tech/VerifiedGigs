@@ -67,17 +67,8 @@ const PORT = process.env.PORT || 5000;
 const {
     authenticateToken,
     authorizeRoles
-} = require('./middleware/authMiddleware');
-app.get('/api/env-test', (req, res) => {
-    res.json({
-        DB_HOST: JSON.stringify(process.env.DB_HOST),
-        DB_USER: JSON.stringify(process.env.DB_USER),
-        DB_NAME: JSON.stringify(process.env.DB_NAME),
-        DB_PORT: JSON.stringify(process.env.DB_PORT),
-        DB_PASSWORD_SET: !!process.env.DB_PASSWORD
-    });
-});
-// Test API
+} = require('./middleware/authMiddleware'); 
+//test api
 app.get('/api/test', (req, res) => {
     res.json({
         message: 'VerifiedGigs API is working'
@@ -145,7 +136,6 @@ app.get(
         });
     }
 );
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
