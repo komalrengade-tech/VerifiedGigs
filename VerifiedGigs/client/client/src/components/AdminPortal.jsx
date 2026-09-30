@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./AdminPortal.css";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL;
 
 async function request(path, token, options = {}) {
     const response = await fetch(`${API}${path}`, {

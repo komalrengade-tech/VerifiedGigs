@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./StudentPortal.css";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 async function api(path, token, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {

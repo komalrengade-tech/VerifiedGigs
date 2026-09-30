@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./ClientPortal.css";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL;
 async function request(path, token, options = {}) { const response = await fetch(`${API}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) } }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || "Request failed"); return body; }
 const money = (value) => value === null || value === undefined || value === "" ? "Not specified" : `₹${Number(value).toLocaleString("en-IN")}`;
 const date = (value) => value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not specified";

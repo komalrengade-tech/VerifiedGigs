@@ -14,9 +14,9 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:5000/api/client/dashboard/stats", { headers: { Authorization: `Bearer ${token}` } }),
-      fetch("http://localhost:5000/api/client/gigs", { headers: { Authorization: `Bearer ${token}` } }),
-      fetch("http://localhost:5000/api/client/applications", { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${import.meta.env.VITE_API_URL}/client/dashboard/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${import.meta.env.VITE_API_URL}/client/gigs`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${import.meta.env.VITE_API_URL}/client/applications`, { headers: { Authorization: `Bearer ${token}` } }),
     ]).then(async ([statsResponse, gigsResponse, applicationsResponse]) => {
       const bodies = await Promise.all([statsResponse.json(), gigsResponse.json(), applicationsResponse.json()]);
       if (!statsResponse.ok || !gigsResponse.ok || !applicationsResponse.ok) throw new Error(bodies.find((body) => body.message)?.message || "Failed to load client dashboard");

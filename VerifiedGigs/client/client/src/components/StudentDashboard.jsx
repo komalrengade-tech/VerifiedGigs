@@ -4,7 +4,7 @@ import axios from "axios";
 import { useAuth } from "../context/useAuth";
 import "./StudentDashboard.css";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
